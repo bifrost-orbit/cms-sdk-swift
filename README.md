@@ -29,7 +29,7 @@ dependencies: [
     .package(url: "https://github.com/bifrost-orbit/cms-sdk-swift", from: "0.1.0"),
 ],
 targets: [
-    .target(name: "App", dependencies: [.product(name: "CMSOrbit", package: "cms-orbit-swift")]),
+    .target(name: "App", dependencies: [.product(name: "CMSOrbit", package: "cms-sdk-swift")]),
 ]
 ```
 
