@@ -8,7 +8,7 @@ The official Swift SDK for the CMS Orbit delivery API. Read pages, menus, site-w
 - Decode fields and pages into your own types
 - Retries, timeouts and typed errors, matching the JavaScript SDK
 
-It needs Swift 5.9 or later, iOS 15, macOS 12, tvOS 15 or watchOS 8.
+It needs Swift 5.9 or later, and iOS 15, macOS 12, tvOS 15 or watchOS 8 or later.
 
 Full documentation: [docs.bifrostorbit.com/cms/developers/sdk-swift](https://docs.bifrostorbit.com/cms/developers/sdk-swift). The delivery API itself is described in [Delivery API](https://docs.bifrostorbit.com/cms/developers/delivery-api).
 
