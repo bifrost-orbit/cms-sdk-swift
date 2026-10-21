@@ -19,14 +19,14 @@ Swift Package Manager reads packages from the root of a Git repository, so the S
 In Xcode, choose **File › Add Package Dependencies…** and enter:
 
 ```
-https://github.com/bifrost-orbit/cms-orbit-swift
+https://github.com/bifrost-orbit/cms-sdk-swift
 ```
 
 In `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/bifrost-orbit/cms-orbit-swift", from: "0.1.0"),
+    .package(url: "https://github.com/bifrost-orbit/cms-sdk-swift", from: "0.1.0"),
 ],
 targets: [
     .target(name: "App", dependencies: [.product(name: "CMSOrbit", package: "cms-orbit-swift")]),
