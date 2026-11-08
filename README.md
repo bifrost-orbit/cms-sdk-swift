@@ -10,7 +10,7 @@ The official Swift SDK for the CMS Orbit delivery API. Read pages, menus, site-w
 
 It needs Swift 5.9 or later, and iOS 15, macOS 12, tvOS 15 or watchOS 8 or later.
 
-Full documentation: [docs.bifrostorbit.com/cms/developers/sdk-swift](https://docs.bifrostorbit.com/cms/developers/sdk-swift). The delivery API itself is described in [Delivery API](https://docs.bifrostorbit.com/cms/developers/delivery-api).
+Full documentation: [docs.bifrostorbit.com/cms/developers/sdk-swift](https://docs.bifrostorbit.com/cms/developers/sdk-swift/). The delivery API itself is described in [Delivery API](https://docs.bifrostorbit.com/cms/developers/delivery-api/).
 
 ## Install
 
@@ -26,7 +26,7 @@ In `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/bifrost-orbit/cms-sdk-swift", from: "0.1.0"),
+    .package(url: "https://github.com/bifrost-orbit/cms-sdk-swift", from: "0.2.0"),
 ],
 targets: [
     .target(name: "App", dependencies: [.product(name: "CMSOrbit", package: "cms-sdk-swift")]),
@@ -42,11 +42,11 @@ import CMSOrbit
 
 let cms = try CMSOrbitClient(
     apiKey: "cms_pk_...",
-    region: "ireland",
-    locale: "en-IE"
+    region: "germany",
+    locale: "de-DE"
 )
 
-let page = try await cms.page("/services/consultations")
+let page = try await cms.page("/gear/fjell-gtx-boot")
 print(page.name, page.fields["title"]?.stringValue ?? "")
 ```
 
@@ -55,8 +55,8 @@ print(page.name, page.fields["title"]?.stringValue ?? "")
 | `apiKey` | A public key, `cms_pk_…`. Required. A secret `cms_sk_…` key is refused with `CMSOrbitError.secretKeyNotAllowed`, because anything in an app can be read by whoever installs it. |
 | `environment` | `.production` (`https://api.bifrostorbit.com/cms`, the default), `.staging` (`https://api-stage.bifrostorbit.com/cms`) or `.custom(url)`. Use a key from the same environment. |
 | `baseURL` | Overrides the environment's address. |
-| `region` | Used when a call names no region, such as `ireland` or `ie`. |
-| `locale` | Used when a call names no language, such as `en-IE`. Without it, the region's default language answers. |
+| `region` | Used when a call names no region, such as `germany` or `de`. |
+| `locale` | Used when a call names no language, such as `de-DE`. Without it, the region's default language answers. |
 | `previewKey` | A secret key for drafts. Server-side Swift only: refused on iOS, tvOS, watchOS and visionOS. See [Preview](#preview). |
 | `timeout` | Seconds per attempt. 5 by default. |
 | `retries` | Extra attempts after a connection failure or a `5xx` answer. 2 by default, waiting 0.25, 0.75 and 2 seconds. |
@@ -108,7 +108,7 @@ case .gone, .notFound:
 }
 ```
 
-`page.meta` says what answered compared with what was asked for. When `page.meta.fallbackApplied` is `true`, another language answered, so you can show "This page is not available in Irish yet."
+`page.meta` says what answered compared with what was asked for. When `page.meta.fallbackApplied` is `true`, another language answered, so you can show "This page is not available in English yet."
 
 ### Menus and site-wide content
 
@@ -124,11 +124,11 @@ let footer = try await cms.global("footer")
 ### Lists
 
 ```swift
-let treatments = try await cms.list(CMSListOptions(
-    type: "treatment",
+let products = try await cms.list(CMSListOptions(
+    type: "product",
     include: [.fields],
     perPage: 20,
-    filter: ["duration": "60"],
+    filter: ["activity": "hiking"],
     sort: .publishedAtDescending
 ))
 ```
@@ -138,7 +138,7 @@ Ask for the next page while `hasMore` is `true`.
 ### Banners, popups and products
 
 ```swift
-let banners = try await cms.banners(.path("/services"), loggedIn: false)
+let banners = try await cms.banners(.path("/trips"), loggedIn: false)
 for banner in banners.items {
     for block in banner.blocks {
         switch block {
@@ -150,7 +150,7 @@ for banner in banners.items {
     }
 }
 
-let products = try await cms.products(perPage: 24, filter: "acne")
+let products = try await cms.products(perPage: 24, filter: "hiking")
 ```
 
 `serverTime` is the CMS clock, so countdowns can tick from it rather than the device's clock.
@@ -184,7 +184,7 @@ struct ArticlePage: Decodable {
     var fields: Fields
 }
 
-let article = try await cms.content(ArticlePage.self, path: "/journal/winter-skin")
+let article = try await cms.content(ArticlePage.self, path: "/journal/winter-hiking")
 ```
 
 Lists take a fields type too:
@@ -286,6 +286,16 @@ protocol BlockRenderer {
 
 Blocks in a slot arrive both in `block.children[slot]` and on the slot's field. Rich text arrives as HTML; render it with `AttributedString` or a web view. `image.url(width:)` asks the CMS for a resized copy of uploaded images.
 
+## Insights Orbit
+
+Pages carry `id`, the entry's id, and `insights`, a `CMSInsightsSite` when the space is connected to Insights Orbit, both `nil` otherwise. In server-side Swift, `CMSInsights.tags(page:)` writes the script with the site key and `<meta name="insights-content">` with the entry's id, or an empty string without a site key:
+
+```swift
+let head = CMSInsights.tags(page: page, src: "/stats/script.js", api: "/stats/collect")
+```
+
+It takes `site`, `contentId`, `src`, `api`, `disable`, `campaigns` and `waitForConsent`, like `CmsInsights` in the JavaScript SDK.
+
 ## Preview
 
 Editors preview drafts in the CMS editor, which opens your website with `?preview=<token>`. An app can take part in two ways.
@@ -309,10 +319,33 @@ let cms = try CMSOrbitClient(
     environment: .staging,
     previewKey: Environment.get("CMS_PREVIEW_KEY")
 )
-let draft = try await cms.page("/services/consultations", options: .init(preview: true))
+let draft = try await cms.page("/gear/fjell-gtx-boot", options: .init(preview: true))
 ```
 
 Secret keys only exist for staging environments, and drafts are never cached. An app that needs to show drafts should ask your own server, which holds the key.
+
+## Webhooks
+
+[Publish webhooks](https://docs.bifrostorbit.com/cms/developers/webhooks/) are signed. On a Swift server, `CMSWebhook.parse` checks the signature and the timestamp and answers the message, or `nil` when it is not genuine or is more than five minutes old. Pass the raw body, before any JSON parsing. With Vapor:
+
+```swift
+app.post("api", "cms-webhook") { req async -> HTTPStatus in
+    guard let message = CMSWebhook.parse(
+        secret: Environment.get("CMS_WEBHOOK_SECRET")!,
+        timestamp: req.headers.first(name: CMSWebhook.timestampHeader) ?? "",
+        signature: req.headers.first(name: CMSWebhook.signatureHeader) ?? "",
+        body: req.body.string ?? ""
+    ) else { return .unauthorized }
+    if message.event != "webhook.test" {
+        await pageCache.clear()
+    }
+    return .noContent
+}
+```
+
+`CMSWebhook.verify(secret:timestamp:signature:body:)` answers only `true` or `false`. Both take the body as `Data` or `String`, and use the whole secret, including `whsec_`. An empty secret never verifies.
+
+`CMSWebhook` uses CryptoKit, so it is there on Apple platforms (macOS, iOS, tvOS and watchOS) and not on Linux, where the rest of the SDK still builds. On a Linux server, check the signature with [swift-crypto](https://github.com/apple/swift-crypto) as [Receive it without the SDK](https://docs.bifrostorbit.com/cms/developers/webhooks/#receive-it-without-the-sdk) describes.
 
 ## Errors
 
@@ -322,6 +355,7 @@ Everything throws `CMSOrbitError`, apart from `CancellationError` when the calli
 | --- | --- |
 | `.notFound(message:)` | `404`: nothing at the address, or no menu, global entry, taxonomy, region or language with that key |
 | `.unauthorized(message:)` | `401`: the key was refused or has expired, or may not read that region or language |
+| `.subscriptionInactive` | `402`: the organisation's CMS Orbit trial or plan has ended, so delivery is paused. Not retried |
 | `.rateLimited(retryAfter:message:)` | `429`: wait `retryAfter` seconds |
 | `.http(status:code:message:)` | Any other `4xx`, such as `400 bad_request` for an unknown sort |
 | `.server(status:message:)` | `5xx`, after the retries |
@@ -343,13 +377,15 @@ do {
 
 `findPage`, `findNavigation` and `findGlobal` return `nil` instead of throwing `.notFound`.
 
+When your organisation's CMS Orbit trial or plan has ended, delivery is paused: every call throws `.subscriptionInactive` (status `402`, code `subscription_inactive`) straight away, without retrying, whatever code the API sends. Check `error.isSubscriptionInactive`, keep showing what the app already has on disk, and show a calm "temporarily unavailable" message where there is nothing. Nothing is deleted, and content comes back as soon as an owner chooses a plan.
+
 ## Caching
 
-Published answers carry `Cache-Control`, so `URLSession`'s cache keeps them for up to a minute (five for menus and globals). Pass a `session` with a larger `URLCache` to keep more, or `URLSessionConfiguration.ephemeral` to keep nothing. Previews are never cached.
+The client does not keep answers itself. Published answers carry `Cache-Control` with `s-maxage`, which is meant for shared caches such as a CDN, so `URLSession`'s own cache should not be relied on to keep them. Keep what the app shows in memory or on disk, show it straight away on the next launch, and read it again when the app returns to the foreground. Drafts are always read fresh. See Caching in the [delivery API](https://docs.bifrostorbit.com/cms/developers/delivery-api/).
 
 ## Testing your app
 
-Pass a `URLSession` whose configuration has your own `URLProtocol` in `protocolClasses`, and answer requests with JSON shaped like the [delivery API](https://docs.bifrostorbit.com/cms/developers/delivery-api). The SDK's own tests do exactly this; see `Tests/CMSOrbitTests/StubProtocol.swift`.
+Pass a `URLSession` whose configuration has your own `URLProtocol` in `protocolClasses`, and answer requests with JSON shaped like the [delivery API](https://docs.bifrostorbit.com/cms/developers/delivery-api/), so tests and SwiftUI previews run without the network.
 
 ## Licence
 

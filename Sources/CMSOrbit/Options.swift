@@ -20,9 +20,9 @@ public enum CMSEnvironment: Sendable, Hashable {
 
 /// Options most calls take. Anything left `nil` uses the client's defaults.
 public struct CMSRequestOptions: Sendable, Hashable {
-    /// Region key or short code, such as `ireland` or `ie`.
+    /// Region key or short code, such as `germany` or `de`.
     public var region: String?
-    /// Language code, such as `en-IE`.
+    /// Language code, such as `de-DE`.
     public var locale: String?
     /// Read drafts. Needs a preview key, which only server-side Swift may hold.
     public var preview: Bool
@@ -60,7 +60,7 @@ public enum CMSListSort: String, Sendable, Hashable, CaseIterable {
 
 /// What to list, for ``CMSOrbitClient/list(_:)``.
 public struct CMSListOptions: Sendable, Hashable {
-    /// The content type key, such as `treatment`.
+    /// The content type key, such as `product`.
     public var type: String
     public var region: String?
     public var locale: String?

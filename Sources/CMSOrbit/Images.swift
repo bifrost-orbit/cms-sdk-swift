@@ -6,7 +6,7 @@ public enum CMSImageFormat: String, Sendable, Hashable {
 }
 
 public enum CMSImages {
-    static let srcsetWidths = [640, 960, 1280, 1920]
+    static let srcsetWidths = [320, 480, 640, 768, 960, 1280, 1600, 1920]
 
     /// The address of an uploaded image resized to `width` and converted to `format`. Other addresses are returned unchanged.
     public static func url(_ url: String, width: Int? = nil, format: CMSImageFormat? = nil) -> String {

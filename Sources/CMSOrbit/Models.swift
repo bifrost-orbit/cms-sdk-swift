@@ -14,8 +14,10 @@ public struct CMSImage: Codable, Sendable, Hashable {
     public var title: String?
     /// Subtitles for a video, as a WebVTT address.
     public var subtitles: String?
+    /// The point to keep in view when the image is cut to fit, from 0 to 1 across and down.
+    public var focalPoint: CMSFocalPoint?
 
-    public init(id: String, url: String, mimeType: String, width: Int?, height: Int?, alt: String, title: String? = nil, subtitles: String? = nil) {
+    public init(id: String, url: String, mimeType: String, width: Int?, height: Int?, alt: String, title: String? = nil, subtitles: String? = nil, focalPoint: CMSFocalPoint? = nil) {
         self.id = id
         self.url = url
         self.mimeType = mimeType
@@ -24,12 +26,130 @@ public struct CMSImage: Codable, Sendable, Hashable {
         self.alt = alt
         self.title = title
         self.subtitles = subtitles
+        self.focalPoint = focalPoint
     }
+}
+
+/// The point to keep in view when an image is cut to fit.
+public struct CMSFocalPoint: Codable, Sendable, Hashable {
+    public var x: Double
+    public var y: Double
+
+    public init(x: Double, y: Double) {
+        self.x = x
+        self.y = y
+    }
+}
+
+/// A picture of a trip or destination from Travel Orbit.
+public struct CMSTravelImage: Codable, Sendable, Hashable {
+    public var url: String
+    public var alt: String
+}
+
+/// One departure of a Travel Orbit trip. Prices are in minor units, such as cents.
+public struct CMSTripDeparture: Codable, Sendable, Hashable {
+    public var id: String
+    public var startDate: String
+    public var endDate: String?
+    public var status: String
+    public var placesLeft: Int?
+    public var guaranteed: Bool
+    public var priceFrom: Int?
+    public var currency: String
+    public var bookingUrl: String?
+}
+
+/// A Trip or Trips field: a trip from Travel Orbit with its live price and next departures.
+public struct CMSTrip: Codable, Sendable, Hashable {
+    public var id: String
+    public var slug: String?
+    public var name: String
+    public var summary: String
+    public var image: CMSTravelImage?
+    public var days: Int?
+    /// In the region's currency when the trip is sold in it, otherwise the trip's own; `currency` says which.
+    public var priceFrom: Int?
+    public var currency: String?
+    public var pricesFrom: [String: Int]
+    /// The trip's own currency, which departure prices are in.
+    public var tripCurrency: String?
+    public var url: String?
+    public var nextDepartures: [CMSTripDeparture]
+    public var guaranteed: Bool
+    public var available: Bool
+    public var images: [CMSTravelImage]?
+    public var activities: [String]?
+    public var countries: [String]?
+    public var areas: [String]?
+    public var difficulty: String?
+    public var currencies: [String]?
+    public var bookingMode: String?
+    /// The trip's full description, itinerary and guides, on the page that picks it.
+    public var details: CMSTripDetails?
+}
+
+public struct CMSTripDetails: Codable, Sendable, Hashable {
+    public struct Day: Codable, Sendable, Hashable {
+        public var id: String
+        public var title: String
+        public var body: String
+        public var distanceKm: Double?
+        public var location: Location?
+        public var stay: String?
+    }
+
+    public struct Location: Codable, Sendable, Hashable {
+        public var lat: Double
+        public var lng: Double
+    }
+
+    public struct Guide: Codable, Sendable, Hashable {
+        public var name: String
+        public var role: String
+        public var bio: String
+        public var photo: CMSTravelImage?
+        public var languages: [String]
+    }
+
+    public var description: String
+    public var highlights: [String]
+    public var included: [String]
+    public var notIncluded: [String]
+    public var itinerary: [Day]
+    public var guides: [Guide]
+}
+
+/// A Destination field: a country or continent from Travel Orbit.
+public struct CMSDestination: Codable, Sendable, Hashable {
+    public var code: String
+    public var name: String
+    public var kind: String
+    public var tagline: String?
+    public var image: CMSTravelImage?
+    public var tripCount: Int?
+    public var url: String?
+}
+
+/// A Departure field: one date of a Travel Orbit trip.
+public struct CMSDeparture: Codable, Sendable, Hashable {
+    public var id: String
+    public var startDate: String
+    public var endDate: String?
+    public var status: String
+    public var placesLeft: Int?
+    public var guaranteed: Bool
+    public var priceFrom: Int?
+    public var currency: String
+    public var bookingUrl: String?
+    public var tripId: String
+    public var tripName: String
+    public var tripUrl: String?
 }
 
 /// A Link field. `href` already carries the target page's current address.
 public struct CMSLink: Codable, Sendable, Hashable {
-    /// `url`, `content`, `email` or `asset`.
+    /// `url`, `content`, `email`, `asset`, or `trip`, `destination` or `guide` for Travel Orbit.
     public var kind: String
     public var href: String?
     public var contentId: String?
@@ -37,14 +157,31 @@ public struct CMSLink: Codable, Sendable, Hashable {
     public var label: String?
     /// `_self`, `_blank` or `nil`.
     public var target: String?
+    /// The picked trip, destination or guide when `kind` is one of them.
+    public var travel: CMSTravelLink?
 
-    public init(kind: String, href: String?, contentId: String? = nil, assetId: String? = nil, label: String? = nil, target: String? = nil) {
+    public init(kind: String, href: String?, contentId: String? = nil, assetId: String? = nil, label: String? = nil, target: String? = nil, travel: CMSTravelLink? = nil) {
         self.kind = kind
         self.href = href
         self.contentId = contentId
         self.assetId = assetId
         self.label = label
         self.target = target
+        self.travel = travel
+    }
+}
+
+/// A trip (its id), destination (its country code or continent) or guide (their address name) a link points at.
+public struct CMSTravelLink: Codable, Sendable, Hashable {
+    public var id: String
+    public var name: String
+    /// `country` or `continent` for destinations.
+    public var kind: String?
+
+    public init(id: String, name: String, kind: String? = nil) {
+        self.id = id
+        self.name = name
+        self.kind = kind
     }
 }
 
@@ -238,12 +375,24 @@ public struct CMSPageMeta: Sendable, Hashable {
     public var references: Bool
 }
 
+/// The Insights Orbit site a page's space is connected to.
+public struct CMSInsightsSite: Codable, Sendable, Hashable {
+    /// The site key for the Insights Orbit script.
+    public var site: String
+
+    public init(site: String) {
+        self.site = site
+    }
+}
+
 /// A page, from ``CMSOrbitClient/page(_:options:)`` or ``CMSOrbitClient/resolve(_:referrer:options:)``.
 public struct CMSPage: Codable, Sendable, Hashable {
     public struct Expired: Codable, Sendable, Hashable {
         public var message: String
     }
 
+    /// The entry's id. `nil` from CMS Orbit versions that do not send it.
+    public var id: String?
     public var url: String
     public var name: String
     public var contentType: String
@@ -259,18 +408,21 @@ public struct CMSPage: Codable, Sendable, Hashable {
     public var fields: JSONValue
     public var components: [CMSComponent]
     public var seo: CMSSeo?
+    /// The Insights Orbit site when the space is connected to Insights Orbit, otherwise `nil`.
+    public var insights: CMSInsightsSite?
     /// Only on a campaign page past its end date that is set to stay visible.
     public var expired: Expired?
     /// The fallback details, gathered in one place.
     public internal(set) var meta: CMSPageMeta
 
     private enum CodingKeys: String, CodingKey {
-        case url, name, contentType, locale, region, requestedLocale, requestedRegion, fallbackApplied
-        case regionFallbackApplied, draft, publishedAt, version, fields, components, seo, expired
+        case id, url, name, contentType, locale, region, requestedLocale, requestedRegion, fallbackApplied
+        case regionFallbackApplied, draft, publishedAt, version, fields, components, seo, insights, expired
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
         url = try container.decode(String.self, forKey: .url)
         name = try container.decode(String.self, forKey: .name)
         contentType = try container.decode(String.self, forKey: .contentType)
@@ -286,6 +438,7 @@ public struct CMSPage: Codable, Sendable, Hashable {
         fields = try container.decodeIfPresent(JSONValue.self, forKey: .fields) ?? [:]
         components = try container.decodeIfPresent([CMSComponent].self, forKey: .components) ?? []
         seo = try container.decodeIfPresent(CMSSeo.self, forKey: .seo)
+        insights = try container.decodeIfPresent(CMSInsightsSite.self, forKey: .insights)
         expired = try container.decodeIfPresent(Expired.self, forKey: .expired)
         meta = CMSPageMeta(
             region: region,
@@ -725,7 +878,7 @@ public struct CMSProduct: Codable, Sendable, Hashable {
     public var slug: String
     public var url: String?
     public var name: String
-    public var phorestId: String?
+    public var catalogId: String?
     public var size: String?
     /// `nil` when the product is not linked to the shop catalogue.
     public var price: Double?

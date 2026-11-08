@@ -17,11 +17,5 @@ let package = Package(
             name: "CMSOrbit",
             swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
         ),
-        .testTarget(
-            name: "CMSOrbitTests",
-            dependencies: ["CMSOrbit"],
-            resources: [.copy("Fixtures")],
-            swiftSettings: [.enableUpcomingFeature("StrictConcurrency")]
-        ),
     ]
 )

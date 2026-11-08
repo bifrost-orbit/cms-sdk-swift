@@ -6,12 +6,12 @@ import FoundationNetworking
 /// Reads published content from the CMS Orbit delivery API.
 ///
 /// ```swift
-/// let cms = try CMSOrbitClient(apiKey: "cms_pk_...", region: "ireland")
-/// let page = try await cms.page("/services/consultations")
+/// let cms = try CMSOrbitClient(apiKey: "cms_pk_...", region: "germany")
+/// let page = try await cms.page("/gear/fjell-gtx-boot")
 /// ```
 public final class CMSOrbitClient: Sendable {
     /// The SDK's version, sent in the `User-Agent` header.
-    public static let version = "0.1.0"
+    public static let version = "0.2.0"
 
     /// The delivery API address, such as `https://api.bifrostorbit.com/cms/api/cdn/v1`.
     public let apiURL: URL
@@ -34,8 +34,8 @@ public final class CMSOrbitClient: Sendable {
     ///   - apiKey: A public delivery key, starting with `cms_pk_`. Secret `cms_sk_` keys are refused.
     ///   - environment: Production, staging or your own address.
     ///   - baseURL: Overrides the environment's address, such as `https://api.bifrostorbit.com/cms`.
-    ///   - region: The region to read when a call does not name one, such as `ireland`.
-    ///   - locale: The language to read when a call does not name one, such as `en-IE`.
+    ///   - region: The region to read when a call does not name one, such as `germany`.
+    ///   - locale: The language to read when a call does not name one, such as `de-DE`.
     ///   - previewKey: A secret `cms_sk_` key for reading drafts. Server-side Swift only: refused on iOS, tvOS, watchOS and visionOS.
     ///   - timeout: Seconds to wait for each attempt. Default 5.
     ///   - retries: How many times to retry a failed connection or a `5xx` answer. Default 2.
@@ -100,7 +100,7 @@ public final class CMSOrbitClient: Sendable {
         return "\(trimmed)/api/cdn/v1"
     }
 
-    /// The preview token in an address the CMS editor opened, such as `https://example.com/services?preview=eyJ…`.
+    /// The preview token in an address the CMS editor opened, such as `https://northwilds.com/trips/lofoten-ridge-walk?preview=eyJ…`.
     public static func previewToken(from url: URL) -> String? {
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         let value = items.first(where: { $0.name == "preview" })?.value ?? items.first(where: { $0.name == "token" })?.value
@@ -325,6 +325,7 @@ public final class CMSOrbitClient: Sendable {
         let first = body?.errors?.first
         switch response.statusCode {
         case 401: throw CMSOrbitError.unauthorized(message: first?.message ?? "The API key was refused")
+        case 402: throw CMSOrbitError.subscriptionInactive
         case 429:
             throw CMSOrbitError.rateLimited(retryAfter: Self.retryAfter(response), message: first?.message ?? "Too many requests")
         case 500...: throw CMSOrbitError.server(status: response.statusCode, message: first?.message ?? "The CMS returned \(response.statusCode)")
@@ -459,6 +460,7 @@ public final class CMSOrbitClient: Sendable {
                 lastError = CMSOrbitError.server(status: response.statusCode, message: message)
                 continue
             case 401: throw CMSOrbitError.unauthorized(message: message)
+            case 402: throw CMSOrbitError.subscriptionInactive
             case 404: throw CMSOrbitError.notFound(message: message)
             case 429: throw CMSOrbitError.rateLimited(retryAfter: Self.retryAfter(response), message: message)
             default: throw CMSOrbitError.http(status: response.statusCode, code: code ?? "error", message: message)
